@@ -1,0 +1,12 @@
+#toDoContainer {
+    position: relative; /* Ensure container allows absolute positioning of children */
+    width: 100%;
+    height: 100vh; /* Adjust as needed */
+    overflow: auto; /* Allow scrolling if needed */
+}
+
+.draggable {
+    position: absolute; /* Required for absolute positioning */
+    cursor: pointer; /* Optional: visual cue for dragging */
+    /* Add other styles as needed */
+}
