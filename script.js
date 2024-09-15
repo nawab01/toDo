@@ -6,18 +6,30 @@ function initializeDraggable() {
 
     draggables.forEach(draggable => {
         let offsetX, offsetY;
+        let lastX, lastY;
+        let velocityX = 0, velocityY = 0;
+        let inertiaId;
 
         function onMouseMove(e) {
             const rect = draggable.getBoundingClientRect();
-            const maxX = window.innerWidth - rect.width;
-            const maxY = window.innerHeight - rect.height;
+            const containerRect = document.getElementById('toDoContainer').getBoundingClientRect();
+            const maxX = containerRect.width - rect.width;
+            const maxY = containerRect.height - rect.height;
 
-            let newX = e.clientX - offsetX;
-            let newY = e.clientY - offsetY;
+            let newX = e.clientX - offsetX - containerRect.left;
+            let newY = e.clientY - offsetY - containerRect.top;
 
-            // Restrict movement within the viewport
+            // Restrict movement within the container
             newX = Math.max(0, Math.min(newX, maxX));
             newY = Math.max(0, Math.min(newY, maxY));
+
+            // Update velocity
+            if (lastX !== undefined && lastY !== undefined) {
+                velocityX = newX - lastX;
+                velocityY = newY - lastY;
+            }
+            lastX = newX;
+            lastY = newY;
 
             draggable.style.left = `${newX}px`;
             draggable.style.top = `${newY}px`;
@@ -26,6 +38,7 @@ function initializeDraggable() {
         function onMouseUp() {
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            startInertia(); // Start inertia effect
         }
 
         function onTouchMove(e) {
@@ -37,11 +50,48 @@ function initializeDraggable() {
         function onTouchEnd() {
             document.removeEventListener('touchmove', onTouchMove);
             document.removeEventListener('touchend', onTouchEnd);
+            startInertia(); // Start inertia effect
+        }
+
+        function startInertia() {
+            if (inertiaId) {
+                cancelAnimationFrame(inertiaId);
+            }
+            function inertia() {
+                if (Math.abs(velocityX) < 0.1 && Math.abs(velocityY) < 0.1) {
+                    return; // Stop if velocity is very low
+                }
+
+                // Apply inertia
+                const rect = draggable.getBoundingClientRect();
+                const containerRect = document.getElementById('toDoContainer').getBoundingClientRect();
+                const maxX = containerRect.width - rect.width;
+                const maxY = containerRect.height - rect.height;
+
+                let newX = parseFloat(draggable.style.left) + velocityX;
+                let newY = parseFloat(draggable.style.top) + velocityY;
+
+                // Restrict movement within the container
+                newX = Math.max(0, Math.min(newX, maxX));
+                newY = Math.max(0, Math.min(newY, maxY));
+
+                draggable.style.left = `${newX}px`;
+                draggable.style.top = `${newY}px`;
+
+                // Reduce velocity (simulate friction)
+                velocityX *= 0.95;
+                velocityY *= 0.95;
+
+                inertiaId = requestAnimationFrame(inertia);
+            }
+            inertia();
         }
 
         draggable.addEventListener('mousedown', (e) => {
             offsetX = e.clientX - draggable.getBoundingClientRect().left;
             offsetY = e.clientY - draggable.getBoundingClientRect().top;
+            lastX = e.clientX - offsetX;
+            lastY = e.clientY - offsetY;
 
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
@@ -51,6 +101,8 @@ function initializeDraggable() {
             const touch = e.touches[0];
             offsetX = touch.clientX - draggable.getBoundingClientRect().left;
             offsetY = touch.clientY - draggable.getBoundingClientRect().top;
+            lastX = touch.clientX - offsetX;
+            lastY = touch.clientY - offsetY;
 
             document.addEventListener('touchmove', onTouchMove);
             document.addEventListener('touchend', onTouchEnd);
@@ -85,6 +137,7 @@ function updateToDos() {
 
     lastPositionX = 0; // Reset to initial position
     const divWidth = 200; // Width of each div (adjust as needed)
+    const divHeight = 100; // Height of each div (adjust as needed)
 
     toDoItems.forEach(todo => {
         const { title, description, dueDate, status, priority } = todo;
@@ -94,6 +147,8 @@ function updateToDos() {
         newDiv.style.position = 'absolute'; // Ensure absolute positioning
         newDiv.style.left = `${lastPositionX}px`;
         newDiv.style.top = '0px'; // Adjust if vertical positioning is needed
+        newDiv.style.width = `${divWidth}px`;
+        newDiv.style.height = `${divHeight}px`;
 
         newDiv.innerHTML = `
             <strong>${title}</strong><br>
@@ -108,10 +163,10 @@ function updateToDos() {
         // Update the position for the next div
         lastPositionX += divWidth + offsetX;
     });
+
     // Reinitialize draggable functionality
     initializeDraggable();
 }
-
 
 function submitForm(event) {
     event.preventDefault();
@@ -129,5 +184,3 @@ document.getElementById('toDoForm').addEventListener('submit', submitForm);
 
 // Initialize draggable functionality on page load
 window.addEventListener('load', initializeDraggable);
-
-
