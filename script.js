@@ -154,6 +154,7 @@ function addToDo(title, description, dueDate, status, priority) {
     toDoItems.push(newToDo);
     saveToDos();
     updateToDos();
+    positionItems(); // Call positionItems after adding a new to-do
 }
 
 function updateToDos() {
